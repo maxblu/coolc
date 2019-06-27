@@ -1,0 +1,124 @@
+\documentclass[]{article}
+
+\RequirePackage[english,spanish]{babel}
+\RequirePackage{epsfig}
+\RequirePackage{amssymb}
+\RequirePackage{graphicx}
+\RequirePackage[margin=1in]{geometry}
+\RequirePackage[utf8]{inputenc}
+
+\bibliographystyle{plain}
+\renewcommand\shorthandsspanish{}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage[utf8]{inputenc}
+\usepackage{listings}
+\usepackage[pdftex]{hyperref}
+
+\hypersetup{colorlinks,
+	    citecolor=black,
+	    	    filecolor=black,
+	    	    linkcolor=black,
+	    	    urlcolor=blue}
+
+\selectlanguage{spanish}
+
+% Title Page
+\title{Compilador de Cool}
+\author{
+	\href{mailto:d.osa@estudiantes.matcom.uh.cu}{Daniel de la Osa Fernández} | C411  \\
+	\href{mailto:j.alvarez@estudiantes.matcom.uh.cu}{Jose Luis Alvarez de la C.} | C412  
+	}
+
+\begin{document}
+
+\twocolumn[
+	\maketitle
+
+	% \begin{abstract}
+	% Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+	% tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+	% quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+	% consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+	% cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+	% proident, sunt in culpa qui officia deserunt mollit anim id est laborum.			
+	% \end{abstract}
+	% \vspace{1cm}
+]
+
+
+% \tableofcontents
+
+\section{Compiladores}\label{sec:com}
+	 A grandes razgos, un compilador no es más que un programa, cuya entrada y salida resultan ser también programas. La entrada es un programa en un lenguaje que llamaremos “de alto nivel”, y la salida en un lenguaje de “bajo nivel”, que es equivalente al primero. Este proyecto tendrá como entrada programas escritos en COOL y tendrá como salida su equivalente en MIPS. De cierta manera un compilador es entonce un traductor. 
+\section{Lenguaje COOL}\label{sec:cool}
+	El lenguaje COOL, acrónimo de \textbf{C}lassroom \textbf{O}bject-\textbf{O}riented \textbf{L}anguage; es un pequeño lenguaje de programación orientado a objetos. Este lenguaje está diseñado para poder realizarle un compilador en el transcurso de un semestre con un esfuerzo considerable. Fue confeccionado por \textbf{Alex Aiken} \cite{aiken} en la \textbf{Universidad de Stanford}.
+
+	COOL tipado estático, herencia simple; es \textit{type safe}, es un lenguaje de expresiones donde cada una posee tipo y valor. Un programa contituye un conjunto de Clases. Una clase está formada por atributos y métodos. Los atributos pueden o no estar inicializados con una expresión de tipo \textit{asign}; pero los métodos siempre tienen una expresión \textit{cuerpo}.
+
+	Finalmente los programas tienen la extensión \textit{.cl}.
+\section{Coolc}\label{sec:coolc}
+	\textbf{Coolc} es un compilador de \textbf{COOL} implementado en \textbf{$C\sharp$}. En este se ha utilizado \textbf{ANTLR} para generar el \textit{lexer}, el \textit{parser}, y las bases de las clases que implementan el patrón \textit{visitor}. Genera código \textbf{Dot} para la visuallización del árbol de derivaciones, chequea semánticamente cada clase y; si es correcto hasta ese punto, por último genera código \textbf{MIPS}.
+
+	\subsection{Preprocesamiento}\label{sec:prep}
+		Lo primero a la hora de implementar un compilador es pasar verificar si la entrada es al menos lexicográfica y sintácticamente correcta. Además se crea una estructura conocida como \textit{\'Arbol de sintáxis abstracta} (AST por sus siglas en inglés). Esta será de gran utilidad facilitando las posteriores etapas de chequeo semántico y generación de código.
+		\subsubsection{ANTLR}\label{sec:antlr}
+			\textbf{ANTLR} es un poderoso generador de \textit{parsers}. Es usado por grandes de la industria como \textbf{Twitter}, \textbf{Oracle} y \textbf{NetBeans}. A partir de una descripcion formal de un lenguaje a la que llamamos \textit{gramática}, \textbf{ANTLR} genera un \textit{lexer} y un \textit{parser}. Entre ambos pueden reconocer cadenas pertenecientes a el lenguaje previamente definido y contruir un \textit{parse tree} (o árbol de derivación)automáticamente. Además también genera \textit{tree walkers} siguiendo los patrones \textit{visitor} y \textit{listener}. Al utilizar estos \textit{walkers} se pueden visitar los nodos del \textit{parse tree} y ejecutar código específico de la aplicación. En nuestro caso esta aplicación será el compilador; así que el código a ejecutar será el correspondiente a las siguientes fases del pipeline; o sea, análisis semántico y generación de código.
+
+			\begin{center}
+				{ 
+				\fboxsep 12pt
+				\fcolorbox {black}{white}{
+				\begin{minipage}[t]{6cm}
+				\textbf{ANTLR v4} is exactly what I want in a parser generator, so I can finally get back to the problem I was originally trying to solve in the 1980s. \\
+				Now, if I could just remember what that was.\\ \\
+				Terrence Parr. Creator of ANTLR.
+				\end{minipage}
+				} }
+			\end{center}
+
+
+		\subsubsection{Análisis Lexicográfico}\label{sec:alex}
+			La primera parte de un compilador es el análisis lexicográfico o \textit{lexer}. Este lee la cadena de caracteres y los agrupa en secuencias conocidas como \textit{lexemas}. Para cada \textit{lexema} se produce como salida un token de la forma $(token-name, attribute-value)$ que se le pasa a la siguiente fase (análisis sintáctico). En el \textit{token}, el primer componente \textit{token-name} tiene es un símbolo abstrato usado durante el análisis sintáctico; y el segundo, \textit{attribute-value}, apunta a un elemento en la tabla de símbolos para este \textit{token}. La información relativa a la tabla de símbolos es necesaria para el chequeo semántico y para la generación de código.
+
+		\subsubsection{Análisis sintáctico}\label{sec:asin}
+			In our compiler model, the parser obtains a string of tokens from the lexical analyzer, and verifies that the string of token names can be generated by the grammar for the source language. We expect the parser to report any syntax errors in an intelligible fashion and to recover from commonly occurring errors to continue processing the remainder of the program. Conceptually, for well-formed programs, the parser constructs a parse tree and passes it to the rest of the compiler for further processing. In fact, the parse tree need not be constructed explicitly, since checking and translation actions can be interspersed with parsing, as we shall see. Thus, the parser and the rest of the front end could well be implemented by a single module.
+
+		\subsubsection{Gramática}\label{sec:gram}
+			En el caso de la gramática se intento que fuera lo más parecido a la definición de \cite{aiken}. Salvo unas pocas excepciones como es el case de la produccion \textit{newvar}, esto se logró. Nótese que solo se pudo alcanzar tal nivel de similitud a partir de la versión 4 de \textbf{ANTLR}. Esto es gracias a que en esta versión se resuelven gran cantidad de ambiguedades como es el caso de la \textit{recursión izquierda inmediata} \cite{antlr}.
+
+		\subsubsection{AST}\label{sec:ast}
+			El \textbf{AST} fue contruído sin ninguna complicación utilizando el patrón \textit{visitor}. Se respetaron los nodos definidos en la gramática y se inicializaron los campos y propiedades necesarios en cada caso. Ejemplo de estos campos son los tipos de alguna expresión cuando era explícito o el valor de las constantes.
+			
+	\subsection{Análisis semántico}\label{sec:asem}
+		Para el análisis semántico se aprovechó la estructura arbólea del \textbf{AST} para definir la correctitud de cada nodo en correspondencia con la correctitud de los hijos y la propia. O sea, en cada nodo se verifica primero la correctitud de los hijos, momento en el cual se terminan de actualizar valores necesarios como puede ser el tipo de una expresión; y entonces se pasa a verificar la correctitud propia. Luego solo es necesario llamar al método \textbf{ChechSemantics()} del nodo raíz y este se encargará de todo. 
+
+	\subsection{Generación de Código}\label{sec:gcod}
+		La generación de código es el momento en que se traducen las instrucciones a código de más bajo nivel. En nuestro caso ese lenguaje es \textbf{MIPS}. En \textbf{coolc} la generación de código se genera igualmente en forma arbólea gracias a las facilidades que otorga el \textbf{AST}. Cada nodo genera su código \textbf{MIPS} y actualiza las constantes del programa que deben de ser situadas al principio del archivo \textbf{.s}. Esto son los nombres de las clases, los \textit{strings}, la variable \textbf{self}, etc. Cada clase posee un método constructor del mismo nombre que la clase; y cada método tiene una etiqueta asociada de la forma \textit{clase.método:}.
+		\subsubsection{MIPS}\label{sec:mips}
+			\textbf{MIPS} (siglas de \textbf{M}icroprocessor without \textbf{I}nterlocked \textbf{P}ipeline \textbf{S}tages) es el nombre de toda una familia de microprocesadores de arquitectura \textbf{RISC}. Es también la arquitectura a la que está orientada \textbf{coolc}.
+		\subsubsection{Mars}\label{sec:mars}
+			Para probar el código generado se utilizó \textbf{MARS}, un emulador de \textbf{MIPS} con interfaz de consola. Esta interfaz fue lo que permitió la eficiencia alcanzada en el testeo del código ensamblador.
+
+\section{Conclusiones}\label{sec:con}
+	En el presente trabajo se loograron alcanzar los objetivos del curso. Los estudiantes tuvieron que enfrentarse a un lenguaje real, con una cantidad y calidad de características adecuada para garantizar el dominio de los conocimientos adquirdos en el curso anterior de Compilación.
+	
+% \section{Recomendaciones}\label{sec:rec}
+	
+
+\begin{thebibliography}{1}
+	\bibitem{aiken} Alex Aiken. \emph{The Cool Reference Manual}.
+		
+	\bibitem{dragon} Alfred V. Aho, Monica S. Lam, Ravi Sethi and Jeffrey D. Ullman. \emph{Compilers. Principles, Techniques \& Tools}.
+	(2nd~edition),  2007.
+	Addison-Wesley Professional.
+
+	\bibitem{antlr} Terence Parr. \emph{The Definitive ANTLR 4 Reference}.
+	2013.
+	The Pragmatic Bookshelf.
+	
+\end{thebibliography}
+	
+\end{document}
